@@ -1,0 +1,16 @@
+# Secrets & environment
+.env
+.env.*
+!.env.example
+
+# Docker local overrides (devs create their own from .example)
+docker-compose.override.yml
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp

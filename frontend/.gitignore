@@ -1,0 +1,16 @@
+# Next.js build output
+.next/
+out/
+
+# Dependencies
+node_modules/
+
+# Next.js env files (local overrides)
+.env*.local
+
+# pnpm debug log
+pnpm-debug.log*
+
+# TypeScript build info
+*.tsbuildinfo
+next-env.d.ts

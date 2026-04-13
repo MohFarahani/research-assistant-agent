@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment (uv)
+.venv/
+
+# Type checker & test caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# DB files
+*.db
+*.db-shm
+*.db-wal
+
+# Uploads (user files, not tracked)
+uploads/
