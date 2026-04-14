@@ -1,6 +1,7 @@
 import re
 
 from qdrant_client import AsyncQdrantClient
+from qdrant_client.http.exceptions import UnexpectedResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -42,12 +43,21 @@ class ChatService:
         query_vector = await self._llm.embed(message)
 
         # 2. Search Qdrant
-        hits = await self._qdrant.search(
-            collection_name=settings.qdrant_collection,
-            query_vector=query_vector,
-            limit=settings.rag_top_k,
-            with_payload=True,
-        )
+        try:
+            result = await self._qdrant.query_points(
+                collection_name=settings.qdrant_collection,
+                query=query_vector,
+                limit=settings.rag_top_k,
+                with_payload=True,
+            )
+            hits = result.points
+        except UnexpectedResponse as exc:
+            if exc.status_code in (404, 400):
+                return ChatResponse(
+                    answer="No relevant documents found. Please upload a document first.",
+                    citations=[],
+                )
+            raise
 
         if not hits:
             return ChatResponse(

@@ -26,7 +26,10 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o"
     openai_embedding_model: str = "text-embedding-3-small"
 
-    # Vector dimensions: 768 for Gemini embeddings, 1536 for OpenAI embeddings
+    # Vector dimensions must match the embedding model output:
+    #   gemini-embedding-001  → 3072
+    #   text-embedding-3-small → 1536
+    #   text-embedding-3-large → 3072
     embedding_dimensions: int = 768
 
     # RAG
@@ -40,6 +43,7 @@ class Settings(BaseSettings):
     # Qdrant
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
+    qdrant_collection: str = "documents"
 
     # Server
     backend_port: int = 8000

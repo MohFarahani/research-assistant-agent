@@ -62,14 +62,20 @@ class DocumentService:
     async def _ensure_collection(self) -> None:
         collections = await self._qdrant.get_collections()
         names = [c.name for c in collections.collections]
-        if settings.qdrant_collection not in names:
-            await self._qdrant.create_collection(
-                collection_name=settings.qdrant_collection,
-                vectors_config=VectorParams(
-                    size=settings.embedding_dimensions,
-                    distance=Distance.COSINE,
-                ),
-            )
+        if settings.qdrant_collection in names:
+            info = await self._qdrant.get_collection(settings.qdrant_collection)
+            existing_dim = info.config.params.vectors.size  # type: ignore[union-attr]
+            if existing_dim != settings.embedding_dimensions:
+                await self._qdrant.delete_collection(settings.qdrant_collection)
+            else:
+                return
+        await self._qdrant.create_collection(
+            collection_name=settings.qdrant_collection,
+            vectors_config=VectorParams(
+                size=settings.embedding_dimensions,
+                distance=Distance.COSINE,
+            ),
+        )
 
     def _extract_pages(self, file_path: Path) -> list[dict[str, object]]:
         doc = fitz.open(str(file_path))
