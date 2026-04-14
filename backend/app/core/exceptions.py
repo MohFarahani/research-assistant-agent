@@ -1,35 +1,14 @@
-class AppError(Exception):
-    status_code: int = 500
-    detail: str = "Internal server error"
+# Custom application exception classes.
+from fastapi import HTTPException
 
 
-class DocumentNotFoundError(AppError):
-    status_code = 404
-
-    def __init__(self, doc_id: str) -> None:
-        self.detail = f"Document {doc_id} not found"
-        super().__init__(self.detail)
-
-
-class ChunkNotFoundError(AppError):
-    status_code = 404
-
-    def __init__(self, chunk_id: str) -> None:
-        self.detail = f"Chunk {chunk_id} not found"
-        super().__init__(self.detail)
-
-
-class IngestionError(AppError):
-    status_code = 500
+class LLMError(Exception):
+    """Raised when an LLM provider call fails."""
 
     def __init__(self, message: str) -> None:
-        self.detail = f"Ingestion failed: {message}"
-        super().__init__(self.detail)
+        super().__init__(message)
+        self.message = message
 
 
-class LLMError(AppError):
-    status_code = 502
-
-    def __init__(self, message: str) -> None:
-        self.detail = f"LLM call failed: {message}"
-        super().__init__(self.detail)
+def llm_error_to_http(exc: LLMError) -> HTTPException:
+    return HTTPException(status_code=502, detail=f"LLM error: {exc.message}")

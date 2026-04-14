@@ -16,6 +16,8 @@ dependencies = [
     "asyncpg",
     "qdrant-client",
     "aiofiles",
+    "google-genai",
+    "groq",
 ]
 
 [project.optional-dependencies]

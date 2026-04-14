@@ -1,13 +1,23 @@
-# OpenAI implementation of LLMProvider.
-from openai import AsyncOpenAI
+# Groq implementation of LLMProvider.
+# Uses Groq for fast, free chat completions (Llama 3) and Gemini for embeddings
+# (Groq does not offer a public embedding API).
+from google import genai
+from groq import AsyncGroq
 
 from app.core.exceptions import LLMError
 from app.llm.base import LLMProvider
 
 
-class OpenAIProvider(LLMProvider):
-    def __init__(self, api_key: str, model: str, embedding_model: str) -> None:
-        self._client = AsyncOpenAI(api_key=api_key)
+class GroqProvider(LLMProvider):
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        gemini_api_key: str,
+        embedding_model: str,
+    ) -> None:
+        self._client = AsyncGroq(api_key=api_key)
+        self._gemini = genai.Client(api_key=gemini_api_key)
         self._model = model
         self._embedding_model = embedding_model
 
@@ -28,9 +38,10 @@ class OpenAIProvider(LLMProvider):
 
     async def embed(self, text: str) -> list[float]:
         try:
-            result = await self._client.embeddings.create(
-                model=self._embedding_model, input=text
+            result = await self._gemini.aio.models.embed_content(
+                model=self._embedding_model,
+                contents=text,
             )
-            return result.data[0].embedding
+            return list(result.embeddings[0].values)
         except Exception as exc:
             raise LLMError(str(exc)) from exc

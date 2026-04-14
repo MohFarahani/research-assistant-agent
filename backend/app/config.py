@@ -1,4 +1,4 @@
-from pydantic import field_validator
+# Application settings loaded from environment variables via pydantic-settings.
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,39 +6,44 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # LLM
-    llm_provider: str = "anthropic"
+    llm_provider: str = "gemini"
+
+    # Google AI Studio / Gemini (free tier)
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_embedding_model: str = "gemini-embedding-001"
+
+    # Groq (free tier — uses Gemini for embeddings)
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
+
+    # Anthropic (paid)
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-4-6"
+
+    # OpenAI (paid)
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"
     openai_embedding_model: str = "text-embedding-3-small"
-    embedding_dimensions: int = 1536
 
-    # Database
-    database_url: str = (
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/research_assistant"
-    )
+    # Vector dimensions: 768 for Gemini embeddings, 1536 for OpenAI embeddings
+    embedding_dimensions: int = 768
 
-    # Qdrant
-    qdrant_host: str = "localhost"
-    qdrant_port: int = 6333
-    qdrant_collection: str = "research_chunks"
-
-    # Server
-    backend_port: int = 8000
-    cors_origins: list[str] = ["http://localhost:3000"]
-
-    # RAG / chunking
+    # RAG
     chunk_max_chars: int = 1600
     chunk_overlap_sentences: int = 1
     rag_top_k: int = 5
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v: object) -> list[str]:
-        if isinstance(v, str):
-            return [o.strip() for o in v.split(",") if o.strip()]
-        return v  # type: ignore[return-value]
+    # Database
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/research_assistant"
+
+    # Qdrant
+    qdrant_host: str = "localhost"
+    qdrant_port: int = 6333
+
+    # Server
+    backend_port: int = 8000
+    cors_origins: str = "http://localhost:3000"
 
 
 settings = Settings()
