@@ -1,1 +1,5 @@
-// Hook for opening/closing the source panel and loading a citation chunk.
+import { useSourcePanelStore } from "@/store/sourcePanelStore";
+
+export function useSourcePanel() {
+  return useSourcePanelStore();
+}
