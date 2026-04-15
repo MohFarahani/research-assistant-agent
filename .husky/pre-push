@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+
+echo "Running pre-push checks..."
+
+# ── Frontend ──────────────────────────────────────────────────────────────────
+echo "\n[frontend] Lint (ESLint)..."
+pnpm --dir frontend lint
+
+echo "\n[frontend] Type check..."
+pnpm --dir frontend type-check
+
+# ── Backend ───────────────────────────────────────────────────────────────────
+echo "\n[backend] Lint (ruff)..."
+cd backend && uv run ruff check . && cd ..
+
+echo "\n[backend] Format check (ruff)..."
+cd backend && uv run ruff format --check . && cd ..
+
+echo "\n[backend] Type check (mypy)..."
+cd backend && uv run mypy app/ && cd ..
+
+echo "\nAll pre-push checks passed."
