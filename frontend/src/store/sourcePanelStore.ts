@@ -9,7 +9,7 @@ interface SourcePanelStore {
   chunk: SourceChunk | null;
   isLoadingChunk: boolean;
   chunkError: string | null;
-  openPanel: (citation: CitationRef) => Promise<void>;
+  openPanel: (citation: CitationRef, query?: string) => Promise<void>;
   closePanel: () => void;
 }
 
@@ -20,7 +20,7 @@ export const useSourcePanelStore = create<SourcePanelStore>((set, get) => ({
   isLoadingChunk: false,
   chunkError: null,
 
-  openPanel: async (citation: CitationRef) => {
+  openPanel: async (citation: CitationRef, query = "") => {
     set({
       isOpen: true,
       selectedCitation: citation,
@@ -30,7 +30,7 @@ export const useSourcePanelStore = create<SourcePanelStore>((set, get) => ({
     });
 
     try {
-      const chunk = await getChunk(citation.doc_id, citation.chunk_id);
+      const chunk = await getChunk(citation.doc_id, citation.chunk_id, query);
       // Guard against race condition: only set if this citation is still selected
       if (get().selectedCitation?.chunk_id === citation.chunk_id) {
         set({ chunk, isLoadingChunk: false });

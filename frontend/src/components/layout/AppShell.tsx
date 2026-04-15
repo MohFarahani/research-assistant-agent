@@ -6,6 +6,7 @@ import { LeftSidebar } from "@/components/layout/LeftSidebar";
 import { ChatArea } from "@/components/layout/ChatArea";
 import { SourcePanel } from "@/components/layout/SourcePanel";
 import { XMarkIcon } from "@/components/icons";
+import { HighlightedText } from "@/components/source/HighlightedText";
 
 export function AppShell() {
   const { openPanel } = useSourcePanel();
@@ -107,7 +108,7 @@ function MobileSourcePanel() {
               </p>
             </div>
             <div className="h-px bg-zinc-700" />
-            <p className="text-sm leading-relaxed text-zinc-300">{chunk.text}</p>
+            <HighlightedText text={chunk.text} highlightRanges={chunk.highlight_ranges} />
           </div>
         )}
         {!isLoadingChunk && !chunkError && !chunk && (

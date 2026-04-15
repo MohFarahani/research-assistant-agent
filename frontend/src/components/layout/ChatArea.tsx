@@ -7,7 +7,7 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { DotsHorizontalIcon, XMarkIcon, MenuIcon } from "@/components/icons";
 
 interface ChatAreaProps {
-  onCitationOpen: (citation: CitationRef) => void;
+  onCitationOpen: (citation: CitationRef, query?: string) => void;
   onToggleSidebar: () => void;
   className?: string;
 }
