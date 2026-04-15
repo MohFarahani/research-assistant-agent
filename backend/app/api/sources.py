@@ -19,4 +19,4 @@ async def get_source_chunk(
     try:
         return await service.get_chunk(doc_id=doc_id, chunk_id=chunk_id, query=query)
     except ChunkNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=exc.detail) from exc
+        raise HTTPException(status_code=404, detail=exc.message) from exc

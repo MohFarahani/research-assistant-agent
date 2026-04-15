@@ -34,6 +34,14 @@ class GeminiProvider(LLMProvider):
                 contents=text,
             )
             # result.embeddings is a list of ContentEmbedding; take the first
-            return list(result.embeddings[0].values)
+            embeddings = result.embeddings
+            if not embeddings:
+                raise LLMError("Gemini returned no embeddings")
+            values = embeddings[0].values
+            if values is None:
+                raise LLMError("Gemini embedding values are None")
+            return list(values)
+        except LLMError:
+            raise
         except Exception as exc:
             raise LLMError(str(exc)) from exc

@@ -19,7 +19,7 @@ class OpenAIProvider(LLMProvider):
         try:
             response = await self._client.chat.completions.create(
                 model=self._model,
-                messages=messages,  # type: ignore[arg-type]
+                messages=messages,
                 max_tokens=2048,
             )
             return response.choices[0].message.content or ""
@@ -31,6 +31,6 @@ class OpenAIProvider(LLMProvider):
             result = await self._client.embeddings.create(
                 model=self._embedding_model, input=text
             )
-            return result.data[0].embedding
+            return list(result.data[0].embedding)
         except Exception as exc:
             raise LLMError(str(exc)) from exc

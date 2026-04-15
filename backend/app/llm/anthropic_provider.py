@@ -20,15 +20,13 @@ class AnthropicProvider(LLMProvider):
         self._embedding_model = embedding_model
 
     async def complete(self, prompt: str, system: str | None = None) -> str:
-        kwargs: dict[str, object] = {
-            "model": self._model,
-            "max_tokens": 2048,
-            "messages": [{"role": "user", "content": prompt}],
-        }
-        if system:
-            kwargs["system"] = system
         try:
-            response = await self._client.messages.create(**kwargs)  # type: ignore[arg-type]
+            response = await self._client.messages.create(
+                model=self._model,
+                max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}],
+                system=system if system is not None else anthropic.NOT_GIVEN,
+            )
             block = response.content[0]
             return block.text if hasattr(block, "text") else ""
         except Exception as exc:
@@ -42,6 +40,6 @@ class AnthropicProvider(LLMProvider):
             result = await client.embeddings.create(
                 model=self._embedding_model, input=text
             )
-            return result.data[0].embedding
+            return list(result.data[0].embedding)
         except Exception as exc:
             raise LLMError(str(exc)) from exc

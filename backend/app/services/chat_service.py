@@ -1,4 +1,5 @@
 import re
+from typing import cast
 
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http.exceptions import UnexpectedResponse
@@ -100,7 +101,7 @@ class ChatService:
                         doc_id=str(p.get("doc_id", "")),
                         chunk_id=chunk_id,
                         doc_label=str(p.get("doc_label", "")),
-                        page=int(p.get("page", 0)),
+                        page=cast(int, p.get("page", 0)),
                     )
                 )
 

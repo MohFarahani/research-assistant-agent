@@ -29,7 +29,7 @@ class GroqProvider(LLMProvider):
         try:
             response = await self._client.chat.completions.create(
                 model=self._model,
-                messages=messages,  # type: ignore[arg-type]
+                messages=messages,
                 max_tokens=2048,
             )
             return response.choices[0].message.content or ""
@@ -42,6 +42,14 @@ class GroqProvider(LLMProvider):
                 model=self._embedding_model,
                 contents=text,
             )
-            return list(result.embeddings[0].values)
+            embeddings = result.embeddings
+            if not embeddings:
+                raise LLMError("Gemini returned no embeddings")
+            values = embeddings[0].values
+            if values is None:
+                raise LLMError("Gemini embedding values are None")
+            return list(values)
+        except LLMError:
+            raise
         except Exception as exc:
             raise LLMError(str(exc)) from exc

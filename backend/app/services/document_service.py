@@ -1,6 +1,7 @@
 import re
 import uuid
 from pathlib import Path
+from typing import Any
 
 import fitz  # PyMuPDF
 from qdrant_client import AsyncQdrantClient
@@ -52,7 +53,7 @@ class DocumentService:
             await self._repo.update_status(doc_id, status="error")
             raise IngestionError(str(exc)) from exc
 
-    async def list_documents(self) -> list:
+    async def list_documents(self) -> list[Any]:
         return await self._repo.list_all()
 
     # ------------------------------------------------------------------ #
@@ -64,7 +65,7 @@ class DocumentService:
         names = [c.name for c in collections.collections]
         if settings.qdrant_collection in names:
             info = await self._qdrant.get_collection(settings.qdrant_collection)
-            existing_dim = info.config.params.vectors.size  # type: ignore[union-attr]
+            existing_dim = info.config.params.vectors.size
             if existing_dim != settings.embedding_dimensions:
                 await self._qdrant.delete_collection(settings.qdrant_collection)
             else:
@@ -81,7 +82,7 @@ class DocumentService:
         doc = fitz.open(str(file_path))
         pages: list[dict[str, object]] = []
         for i, page in enumerate(doc):
-            text = page.get_text("text").strip()  # type: ignore[attr-defined]
+            text = page.get_text("text").strip()
             if text:
                 pages.append({"page_num": i + 1, "text": text})
         doc.close()
