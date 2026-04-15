@@ -46,4 +46,7 @@ def get_llm_provider() -> LLMProvider:
             embedding_model=settings.openai_embedding_model,
         )
 
-    raise ValueError(f"Unknown LLM_PROVIDER: {settings.llm_provider!r}. Choose from: gemini, groq, anthropic, openai")
+    raise ValueError(
+        f"Unknown LLM_PROVIDER: {settings.llm_provider!r}. "
+        "Choose from: gemini, groq, anthropic, openai"
+    )

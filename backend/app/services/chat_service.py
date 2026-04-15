@@ -54,7 +54,10 @@ class ChatService:
         except UnexpectedResponse as exc:
             if exc.status_code in (404, 400):
                 return ChatResponse(
-                    answer="No relevant documents found. Please upload a document first.",
+                    answer=(
+                        "No relevant documents found. "
+                        "Please upload a document first."
+                    ),
                     citations=[],
                 )
             raise
