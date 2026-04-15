@@ -33,7 +33,7 @@ export function AppShell() {
                 <XMarkIcon className="w-4 h-4" />
               </button>
             </div>
-            <LeftSidebar className="flex-1" />
+            <LeftSidebar className="flex-1" expanded={true} />
           </div>
         </div>
       )}
