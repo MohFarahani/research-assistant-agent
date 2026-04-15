@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.core.dependencies import DBSession, LLMDep, QdrantDep
+from app.core.dependencies import DBSession, LLMDep, QdrantDep, UserIdDep
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.chat_service import ChatService
 
@@ -13,6 +13,7 @@ async def chat(
     db: DBSession,
     qdrant: QdrantDep,
     llm: LLMDep,
+    user_id: UserIdDep,
 ) -> ChatResponse:
     service = ChatService(db, qdrant, llm)
-    return await service.chat(body.message)
+    return await service.chat(body.message, user_id=user_id)

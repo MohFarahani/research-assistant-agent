@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.core.dependencies import LLMDep, QdrantDep
+from app.core.dependencies import LLMDep, QdrantDep, UserIdDep
 from app.schemas.summarization import SummarizeRequest, SummarizeResponse
 from app.services.summarization_service import SummarizationService
 
@@ -12,7 +12,8 @@ async def summarize(
     body: SummarizeRequest,
     qdrant: QdrantDep,
     llm: LLMDep,
+    user_id: UserIdDep,
 ) -> SummarizeResponse:
     service = SummarizationService(qdrant, llm)
-    summary = await service.summarize(body.doc_id)
+    summary = await service.summarize(body.doc_id, user_id=user_id)
     return SummarizeResponse(doc_id=body.doc_id, summary=summary)

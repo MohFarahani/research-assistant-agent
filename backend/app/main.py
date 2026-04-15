@@ -5,9 +5,12 @@ from fastapi.responses import JSONResponse
 from app.api import chat, documents, sources, summarize
 from app.config import settings
 from app.core.exceptions import AppError
+from app.middleware.user_id import UserIdMiddleware
 
 app = FastAPI(title="Research Assistant API", version="0.1.0")
 
+# Middleware is applied in LIFO order — UserIdMiddleware runs inside CORS
+app.add_middleware(UserIdMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

@@ -5,7 +5,7 @@ from typing import Any
 
 import fitz  # PyMuPDF
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
+from qdrant_client.models import Distance, PayloadSchemaType, PointStruct, VectorParams
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -28,8 +28,8 @@ class DocumentService:
         self._llm = llm
         self._repo = DocumentRepository(db)
 
-    async def create_pending(self, filename: str) -> uuid.UUID:
-        doc = await self._repo.create(filename=filename)
+    async def create_pending(self, filename: str, user_id: str) -> uuid.UUID:
+        doc = await self._repo.create(filename=filename, user_id=user_id)
         return doc.id
 
     async def ingest(
@@ -37,11 +37,12 @@ class DocumentService:
         doc_id: uuid.UUID,
         filename: str,
         file_path: Path,
+        user_id: str,
     ) -> None:
         try:
             await self._ensure_collection()
             pages = self._extract_pages(file_path)
-            chunks = self._chunk_pages(doc_id, filename, pages)
+            chunks = self._chunk_pages(doc_id, filename, pages, user_id)
             await self._embed_and_upsert(chunks)
             await self._repo.update_status(
                 doc_id,
@@ -53,8 +54,8 @@ class DocumentService:
             await self._repo.update_status(doc_id, status="error")
             raise IngestionError(str(exc)) from exc
 
-    async def list_documents(self) -> list[Any]:
-        return await self._repo.list_all()
+    async def list_documents(self, user_id: str) -> list[Any]:
+        return await self._repo.list_all(user_id=user_id)
 
     # ------------------------------------------------------------------ #
     # Internal helpers                                                     #
@@ -72,6 +73,7 @@ class DocumentService:
             if existing_dim != settings.embedding_dimensions:
                 await self._qdrant.delete_collection(settings.qdrant_collection)
             else:
+                await self._ensure_user_id_index()
                 return
         await self._qdrant.create_collection(
             collection_name=settings.qdrant_collection,
@@ -80,6 +82,17 @@ class DocumentService:
                 distance=Distance.COSINE,
             ),
         )
+        await self._ensure_user_id_index()
+
+    async def _ensure_user_id_index(self) -> None:
+        try:
+            await self._qdrant.create_payload_index(
+                collection_name=settings.qdrant_collection,
+                field_name="user_id",
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+        except Exception:
+            pass  # index may already exist — non-fatal
 
     def _extract_pages(self, file_path: Path) -> list[dict[str, object]]:
         doc = fitz.open(str(file_path))
@@ -96,6 +109,7 @@ class DocumentService:
         doc_id: uuid.UUID,
         filename: str,
         pages: list[dict[str, object]],
+        user_id: str,
     ) -> list[dict[str, object]]:
         chunks: list[dict[str, object]] = []
         chunk_index = 0
@@ -124,6 +138,7 @@ class DocumentService:
                             "page": page_num,
                             "chunk_index": chunk_index,
                             "text": chunk_text,
+                            "user_id": user_id,
                         }
                     )
                     chunk_index += 1
@@ -147,6 +162,7 @@ class DocumentService:
                         "page": page_num,
                         "chunk_index": chunk_index,
                         "text": chunk_text,
+                        "user_id": user_id,
                     }
                 )
                 chunk_index += 1
@@ -168,6 +184,7 @@ class DocumentService:
                         "page": chunk["page"],
                         "chunk_index": chunk["chunk_index"],
                         "text": chunk["text"],
+                        "user_id": chunk["user_id"],
                     },
                 )
             )

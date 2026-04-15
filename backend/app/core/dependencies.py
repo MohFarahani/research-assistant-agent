@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from qdrant_client import AsyncQdrantClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -28,6 +28,11 @@ def get_llm() -> LLMProvider:
     return get_llm_provider()
 
 
+def get_user_id(request: Request) -> str:
+    return request.state.user_id  # type: ignore[no-any-return]
+
+
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 QdrantDep = Annotated[AsyncQdrantClient, Depends(get_qdrant)]
 LLMDep = Annotated[LLMProvider, Depends(get_llm)]
+UserIdDep = Annotated[str, Depends(get_user_id)]

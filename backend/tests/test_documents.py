@@ -12,9 +12,11 @@ from qdrant_client import AsyncQdrantClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import documents
-from app.core.dependencies import get_db, get_llm, get_qdrant
+from app.core.dependencies import get_db, get_llm, get_qdrant, get_user_id
 from app.llm.base import LLMProvider
 from app.models.document import Document
+
+_TEST_USER_ID = "aaaaaaaa-0000-0000-0000-000000000001"
 
 
 def _make_app() -> FastAPI:
@@ -67,6 +69,7 @@ def _build_client(
     app.dependency_overrides[get_db] = override_db
     app.dependency_overrides[get_qdrant] = lambda: mock_qdrant
     app.dependency_overrides[get_llm] = lambda: mock_llm
+    app.dependency_overrides[get_user_id] = lambda: _TEST_USER_ID
 
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
