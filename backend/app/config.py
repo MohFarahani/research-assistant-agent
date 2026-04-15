@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     # Vector dimensions must match the embedding model output:
     #   gemini-embedding-001  → 3072
     #   text-embedding-3-small → 1536
-    #   text-embedding-3-large → 3072
     embedding_dimensions: int = 768
 
     # RAG
