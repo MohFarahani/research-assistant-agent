@@ -38,18 +38,21 @@ export function HighlightedText({ text, highlightRanges }: HighlightedTextProps)
   const segments = buildSegments(text, highlightRanges);
 
   return (
-    <p className="text-sm leading-relaxed">
+    <div className="text-sm leading-loose tracking-wide">
       {segments.map((seg, i) =>
         seg.highlighted ? (
-          <span key={i} className="bg-yellow-400/30 text-yellow-200 rounded px-0.5">
+          <span
+            key={i}
+            className="bg-amber-400/25 text-amber-200 rounded-sm px-0.5 ring-1 ring-amber-400/40 font-medium"
+          >
             {seg.text}
           </span>
         ) : (
-          <span key={i} className="text-zinc-300">
+          <span key={i} className="text-zinc-400">
             {seg.text}
           </span>
         )
       )}
-    </p>
+    </div>
   );
 }
