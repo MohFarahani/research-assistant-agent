@@ -8,7 +8,7 @@ import { AIMessage } from "@/components/chat/AIMessage";
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
-  onCitationOpen: (citation: CitationRef) => void;
+  onCitationOpen: (citation: CitationRef, query?: string) => void;
 }
 
 function TypingIndicator() {
@@ -75,13 +75,20 @@ export function MessageList({ messages, isLoading, onCitationOpen }: MessageList
       aria-live="polite"
       className="flex-1 overflow-y-auto py-4 scroll-smooth"
     >
-      {messages.map((msg) =>
-        msg.role === "user" ? (
-          <UserMessage key={msg.id} message={msg} />
-        ) : (
-          <AIMessage key={msg.id} message={msg} onCitationOpen={onCitationOpen} />
-        )
-      )}
+      {messages.map((msg, idx) => {
+        if (msg.role === "user") {
+          return <UserMessage key={msg.id} message={msg} />;
+        }
+        const preceding = messages.slice(0, idx).findLast((m) => m.role === "user");
+        return (
+          <AIMessage
+            key={msg.id}
+            message={msg}
+            query={preceding?.content}
+            onCitationOpen={onCitationOpen}
+          />
+        );
+      })}
       {isLoading && <TypingIndicator />}
     </div>
   );

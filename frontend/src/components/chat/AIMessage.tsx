@@ -5,7 +5,8 @@ import type { Components } from "react-markdown";
 
 interface AIMessageProps {
   message: AIMessageType;
-  onCitationOpen: (citation: CitationRef) => void;
+  query?: string;
+  onCitationOpen: (citation: CitationRef, query?: string) => void;
 }
 
 const markdownComponents: Components = {
@@ -27,7 +28,7 @@ const markdownComponents: Components = {
   ),
 };
 
-export function AIMessage({ message, onCitationOpen }: AIMessageProps) {
+export function AIMessage({ message, query = "", onCitationOpen }: AIMessageProps) {
   return (
     <div className="flex justify-start mb-4 px-4 gap-3">
       <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-1">
@@ -45,7 +46,7 @@ export function AIMessage({ message, onCitationOpen }: AIMessageProps) {
               <CitationBadge
                 key={citation.chunk_id}
                 citation={citation}
-                onOpen={onCitationOpen}
+                onOpen={(c) => onCitationOpen(c, query)}
               />
             ))}
           </div>
