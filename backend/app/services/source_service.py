@@ -1,5 +1,4 @@
 import math
-from collections.abc import Sequence
 
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import FieldCondition, Filter, MatchValue
@@ -87,10 +86,9 @@ class SourceService:
         ]
         if user_id:
             must.append(FieldCondition(key="user_id", match=MatchValue(value=user_id)))
-        must_conditions: Sequence[FieldCondition] = must
         results, _ = await self._qdrant.scroll(
             collection_name=settings.qdrant_collection,
-            scroll_filter=Filter(must=must_conditions),
+            scroll_filter=Filter(must=must),
             limit=1,
             with_payload=True,
         )
