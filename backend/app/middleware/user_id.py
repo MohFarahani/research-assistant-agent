@@ -1,5 +1,6 @@
 import re
 import uuid
+from collections.abc import Awaitable, Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -12,9 +13,11 @@ _UUID_RE = re.compile(
 _COOKIE_NAME = "user_id"
 _ONE_YEAR = 60 * 60 * 24 * 365
 
+_CallNext = Callable[[Request], Awaitable[Response]]
 
-class UserIdMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next) -> Response:  # type: ignore[override]
+
+class UserIdMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
+    async def dispatch(self, request: Request, call_next: _CallNext) -> Response:
         raw = request.cookies.get(_COOKIE_NAME, "")
         is_new = not raw or not _UUID_RE.match(raw)
         user_id = str(uuid.uuid4()) if is_new else raw
