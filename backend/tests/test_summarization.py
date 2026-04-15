@@ -7,8 +7,10 @@ from httpx import ASGITransport, AsyncClient
 from qdrant_client import AsyncQdrantClient
 
 from app.api import summarize
-from app.core.dependencies import get_llm, get_qdrant
+from app.core.dependencies import get_llm, get_qdrant, get_user_id
 from app.llm.base import LLMProvider
+
+_TEST_USER_ID = "aaaaaaaa-0000-0000-0000-000000000001"
 
 
 def _make_app() -> FastAPI:
@@ -36,6 +38,7 @@ def _build_client(
     app = _make_app()
     app.dependency_overrides[get_qdrant] = lambda: mock_qdrant
     app.dependency_overrides[get_llm] = lambda: mock_llm
+    app.dependency_overrides[get_user_id] = lambda: _TEST_USER_ID
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
@@ -97,4 +100,4 @@ class TestSummarizeEndpoint:
             async with _build_client(mock_qdrant, mock_llm) as client:
                 await client.post("/summarize", json={"doc_id": "my-doc-id"})
 
-        mock_service.summarize.assert_awaited_once_with("my-doc-id")
+        mock_service.summarize.assert_awaited_once_with("my-doc-id", user_id=_TEST_USER_ID)

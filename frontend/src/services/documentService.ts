@@ -4,6 +4,7 @@ import type { Document, UploadResponse } from "@/types/document";
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000",
   timeout: 30_000,
+  withCredentials: true, // send user_id cookie on every request
 });
 
 export const listDocuments = (): Promise<Document[]> =>

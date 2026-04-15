@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 
-from app.core.dependencies import DBSession, LLMDep, QdrantDep
+from app.core.dependencies import DBSession, LLMDep, QdrantDep, UserIdDep
 from app.schemas.document import DocumentResponse, UploadResponse
 from app.services.document_service import DocumentService
 
@@ -13,21 +13,25 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 _UPLOAD_DIR = Path("uploads")
 
 
-async def _run_ingestion(doc_id: uuid.UUID, filename: str, file_path: Path) -> None:
+async def _run_ingestion(
+    doc_id: uuid.UUID, filename: str, file_path: Path, user_id: str
+) -> None:
     """Standalone background coroutine with its own DB session."""
     from app.core.dependencies import _async_session, get_llm, get_qdrant
 
     async with _async_session() as session:
         service = DocumentService(session, get_qdrant(), get_llm())
-        await service.ingest(doc_id=doc_id, filename=filename, file_path=file_path)
+        await service.ingest(
+            doc_id=doc_id, filename=filename, file_path=file_path, user_id=user_id
+        )
 
 
 @router.get("", response_model=list[DocumentResponse])
 async def list_documents(
-    db: DBSession, qdrant: QdrantDep, llm: LLMDep
+    db: DBSession, qdrant: QdrantDep, llm: LLMDep, user_id: UserIdDep
 ) -> list[DocumentResponse]:
     service = DocumentService(db, qdrant, llm)
-    docs = await service.list_documents()
+    docs = await service.list_documents(user_id=user_id)
     return [DocumentResponse.model_validate(d) for d in docs]
 
 
@@ -37,6 +41,7 @@ async def upload_document(
     db: DBSession,
     qdrant: QdrantDep,
     llm: LLMDep,
+    user_id: UserIdDep,
     file: UploadFile = File(...),
 ) -> UploadResponse:
     filename = file.filename or "upload.pdf"
@@ -44,13 +49,14 @@ async def upload_document(
         raise HTTPException(status_code=422, detail="Only PDF files are accepted.")
 
     service = DocumentService(db, qdrant, llm)
-    doc_id = await service.create_pending(filename=filename)
+    doc_id = await service.create_pending(filename=filename, user_id=user_id)
 
     _UPLOAD_DIR.mkdir(exist_ok=True)
     file_path = _UPLOAD_DIR / f"{doc_id}.pdf"
     with file_path.open("wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    background_tasks.add_task(_run_ingestion, doc_id, filename, file_path)
+    # user_id captured here — request.state is not accessible in background tasks
+    background_tasks.add_task(_run_ingestion, doc_id, filename, file_path, user_id)
 
     return UploadResponse(id=doc_id, filename=filename, status="processing")

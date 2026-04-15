@@ -3,6 +3,7 @@ from typing import cast
 
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http.exceptions import UnexpectedResponse
+from qdrant_client.models import FieldCondition, Filter, MatchValue
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -39,15 +40,19 @@ class ChatService:
         self._qdrant = qdrant
         self._llm = llm
 
-    async def chat(self, message: str) -> ChatResponse:
+    async def chat(self, message: str, user_id: str) -> ChatResponse:
         # 1. Embed query
         query_vector = await self._llm.embed(message)
 
-        # 2. Search Qdrant
+        # 2. Search Qdrant — scoped to the current user's documents
+        user_filter = Filter(
+            must=[FieldCondition(key="user_id", match=MatchValue(value=user_id))]
+        )
         try:
             result = await self._qdrant.query_points(
                 collection_name=settings.qdrant_collection,
                 query=query_vector,
+                query_filter=user_filter,
                 limit=settings.rag_top_k,
                 with_payload=True,
             )

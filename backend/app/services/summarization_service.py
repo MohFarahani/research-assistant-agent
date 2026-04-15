@@ -17,11 +17,14 @@ class SummarizationService:
         self._qdrant = qdrant
         self._llm = llm
 
-    async def summarize(self, doc_id: str) -> str:
+    async def summarize(self, doc_id: str, user_id: str) -> str:
         results, _ = await self._qdrant.scroll(
             collection_name=settings.qdrant_collection,
             scroll_filter=Filter(
-                must=[FieldCondition(key="doc_id", match=MatchValue(value=doc_id))]
+                must=[
+                    FieldCondition(key="doc_id", match=MatchValue(value=doc_id)),
+                    FieldCondition(key="user_id", match=MatchValue(value=user_id)),
+                ]
             ),
             limit=500,
             with_payload=True,

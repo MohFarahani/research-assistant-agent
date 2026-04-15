@@ -30,3 +30,4 @@ class Document(Base):
     )
     page_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     chunk_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)

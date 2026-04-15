@@ -78,16 +78,19 @@ class SourceService:
         self._llm = llm
 
     async def get_chunk(
-        self, doc_id: str, chunk_id: str, query: str = ""
+        self, doc_id: str, chunk_id: str, query: str = "", user_id: str = ""
     ) -> SourceChunkResponse:
+        must_conditions = [
+            FieldCondition(key="chunk_id", match=MatchValue(value=chunk_id)),
+            FieldCondition(key="doc_id", match=MatchValue(value=doc_id)),
+        ]
+        if user_id:
+            must_conditions.append(
+                FieldCondition(key="user_id", match=MatchValue(value=user_id))
+            )
         results, _ = await self._qdrant.scroll(
             collection_name=settings.qdrant_collection,
-            scroll_filter=Filter(
-                must=[
-                    FieldCondition(key="chunk_id", match=MatchValue(value=chunk_id)),
-                    FieldCondition(key="doc_id", match=MatchValue(value=doc_id)),
-                ]
-            ),
+            scroll_filter=Filter(must=must_conditions),
             limit=1,
             with_payload=True,
         )
