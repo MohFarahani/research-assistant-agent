@@ -128,7 +128,9 @@ class TestChatEndpoint:
         mock_llm: LLMProvider,
     ) -> None:
         mock_service = MagicMock()
-        mock_service.chat = AsyncMock(return_value=ChatResponse(answer="ok", citations=[]))
+        mock_service.chat = AsyncMock(
+            return_value=ChatResponse(answer="ok", citations=[])
+        )
 
         with patch("app.api.chat.ChatService", return_value=mock_service):
             async with _build_client(mock_db, mock_qdrant, mock_llm) as client:

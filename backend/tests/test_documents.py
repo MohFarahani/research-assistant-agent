@@ -89,7 +89,13 @@ class TestUploadDocument:
             async with _build_client(mock_db, mock_qdrant, mock_llm) as client:
                 response = await client.post(
                     "/documents/upload",
-                    files={"file": ("report.pdf", io.BytesIO(b"%PDF-fake"), "application/pdf")},
+                    files={
+                        "file": (
+                            "report.pdf",
+                            io.BytesIO(b"%PDF-fake"),
+                            "application/pdf",
+                        )
+                    },
                 )
 
         assert response.status_code == 202
@@ -122,7 +128,13 @@ class TestUploadDocument:
         async with _build_client(mock_db, mock_qdrant, mock_llm) as client:
             response = await client.post(
                 "/documents/upload",
-                files={"file": ("nodotpdf", io.BytesIO(b"%PDF-"), "application/octet-stream")},
+                files={
+                    "file": (
+                        "nodotpdf",
+                        io.BytesIO(b"%PDF-"),
+                        "application/octet-stream",
+                    )
+                },
             )
 
         assert response.status_code == 422
