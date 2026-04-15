@@ -9,7 +9,9 @@ from app.core.exceptions import ChunkNotFoundError
 from app.llm.base import LLMProvider
 from app.schemas.source import HighlightRange, SourceChunkResponse
 
-_SENTENCE_SPLIT = re.compile(r"[^.?!]+[.?!]?")
+# Split on punctuation + whitespace + uppercase (real sentence boundary).
+# Avoids splitting "3. Application" or "DA99 (pressing)." mid-item.
+_SENTENCE_SPLIT = re.compile(r"(?<=[.?!])\s+(?=[A-Z])")
 
 # Minimum cosine similarity for a sentence to be highlighted semantically
 _SEMANTIC_THRESHOLD = 0.75
@@ -143,11 +145,32 @@ class SourceService:
             highlight_ranges=highlight_ranges,
         )
 
+    def _split_sentences(self, text: str) -> list[tuple[str, int, int]]:
+        """Split text into (sentence, start, end) tuples, preserving char positions."""
+        parts: list[tuple[str, int, int]] = []
+        pos = 0
+        for seg in _SENTENCE_SPLIT.split(text):
+            seg_stripped = seg.strip()
+            # Skip trivially short fragments (numbers, punctuation, etc.)
+            if len(seg_stripped) < 10:
+                pos += len(seg)
+                # Account for the whitespace consumed by the split
+                while pos < len(text) and text[pos] in " \t\n":
+                    pos += 1
+                continue
+            start = text.find(seg_stripped, pos)
+            if start == -1:
+                start = pos
+            end = start + len(seg_stripped)
+            parts.append((seg_stripped, start, end))
+            pos = end
+        return parts
+
     async def _compute_highlights(self, text: str, query: str) -> list[HighlightRange]:
         if not query:
             return []
 
-        sentences = list(_SENTENCE_SPLIT.finditer(text))
+        sentences = self._split_sentences(text)
         if not sentences:
             return []
 
@@ -155,25 +178,17 @@ class SourceService:
         try:
             query_vec = await self._llm.embed(query)
             scored: list[tuple[float, int, int]] = []
-            for m in sentences:
-                sentence_text = m.group().strip()
-                if not sentence_text:
-                    continue
-                sent_vec = await self._llm.embed(sentence_text)
+            for sent_text, start, end in sentences:
+                sent_vec = await self._llm.embed(sent_text)
                 similarity = _cosine(query_vec, sent_vec)
-                scored.append((similarity, m.start(), m.end()))
+                scored.append((similarity, start, end))
 
-            above_threshold = [s for s in scored if s[0] >= _SEMANTIC_THRESHOLD]
-            if above_threshold:
-                above_threshold.sort(key=lambda x: -x[0])
-                return [
-                    HighlightRange(start=s[1], end=s[2]) for s in above_threshold[:3]
-                ]
-
-            # If nothing clears the threshold, highlight the single best sentence
             if scored:
-                best = max(scored, key=lambda x: x[0])
-                return [HighlightRange(start=best[1], end=best[2])]
+                scored.sort(key=lambda x: -x[0])
+                best_score = scored[0][0]
+                # Include all sentences within 0.05 of the best score (up to 3)
+                top = [s for s in scored if best_score - s[0] <= 0.05][:3]
+                return [HighlightRange(start=s[1], end=s[2]) for s in top]
 
         except Exception:
             pass  # Fall through to lexical fallback
@@ -185,19 +200,19 @@ class SourceService:
             return []
 
         lex_scored: list[tuple[int, int, int]] = []
-        for m in sentences:
-            sentence_lower = m.group().lower()
+        for sent_text, start, end in sentences:
+            sentence_lower = sent_text.lower()
             hits = sum(1 for kw in keywords if kw in sentence_lower)
             if hits > 0:
-                lex_scored.append((hits, m.start(), m.end()))
+                lex_scored.append((hits, start, end))
 
         if lex_scored:
             lex_scored.sort(key=lambda x: -x[0])
-            best_score = lex_scored[0][0]
+            best_score_lex = lex_scored[0][0]
             return [
                 HighlightRange(start=s[1], end=s[2])
                 for s in lex_scored
-                if s[0] == best_score
+                if s[0] == best_score_lex
             ][:3]
 
         return []
