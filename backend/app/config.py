@@ -38,7 +38,9 @@ class Settings(BaseSettings):
     rag_top_k: int = 5
 
     # Database
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/research_assistant"
+    database_url: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/research_assistant"
+    )
 
     # Qdrant
     qdrant_host: str = "localhost"

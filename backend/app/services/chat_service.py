@@ -55,8 +55,7 @@ class ChatService:
             if exc.status_code in (404, 400):
                 return ChatResponse(
                     answer=(
-                        "No relevant documents found. "
-                        "Please upload a document first."
+                        "No relevant documents found. Please upload a document first."
                     ),
                     citations=[],
                 )

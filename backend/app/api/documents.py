@@ -13,9 +13,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 _UPLOAD_DIR = Path("uploads")
 
 
-async def _run_ingestion(
-    doc_id: uuid.UUID, filename: str, file_path: Path
-) -> None:
+async def _run_ingestion(doc_id: uuid.UUID, filename: str, file_path: Path) -> None:
     """Standalone background coroutine with its own DB session."""
     from app.core.dependencies import _async_session, get_llm, get_qdrant
 
