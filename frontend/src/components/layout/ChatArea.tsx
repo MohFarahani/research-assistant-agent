@@ -4,7 +4,7 @@ import type { CitationRef } from "@/types/chat";
 import { useChat } from "@/hooks/useChat";
 import { MessageList } from "@/components/chat/MessageList";
 import { ChatInput } from "@/components/chat/ChatInput";
-import { DotsHorizontalIcon, XMarkIcon, MenuIcon } from "@/components/icons";
+import { MenuIcon } from "@/components/icons";
 
 interface ChatAreaProps {
   onCitationOpen: (citation: CitationRef, query?: string) => void;
@@ -30,20 +30,6 @@ export function ChatArea({ onCitationOpen, onToggleSidebar, className = "" }: Ch
           <h1 className="text-base font-semibold text-zinc-100">
             <span className="font-bold">Research</span> Assistant
           </h1>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            aria-label="More options"
-            className="text-zinc-400 hover:text-zinc-200 p-1.5 rounded-lg hover:bg-zinc-800 transition-colors"
-          >
-            <DotsHorizontalIcon className="w-4 h-4" />
-          </button>
-          <button
-            aria-label="Close"
-            className="text-zinc-400 hover:text-zinc-200 p-1.5 rounded-lg hover:bg-zinc-800 transition-colors"
-          >
-            <XMarkIcon className="w-4 h-4" />
-          </button>
         </div>
       </header>
 
