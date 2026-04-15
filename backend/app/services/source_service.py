@@ -2,14 +2,10 @@ import math
 
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import (
+    Condition,
     FieldCondition,
     Filter,
-    HasIdCondition,
-    HasVectorCondition,
-    IsEmptyCondition,
-    IsNullCondition,
     MatchValue,
-    NestedCondition,
 )
 
 from app.config import settings
@@ -89,7 +85,7 @@ class SourceService:
     async def get_chunk(
         self, doc_id: str, chunk_id: str, query: str = "", user_id: str = ""
     ) -> SourceChunkResponse:
-        must: list[FieldCondition | IsEmptyCondition | IsNullCondition | HasIdCondition | HasVectorCondition | NestedCondition | Filter] = [
+        must: list[Condition] = [
             FieldCondition(key="chunk_id", match=MatchValue(value=chunk_id)),
             FieldCondition(key="doc_id", match=MatchValue(value=doc_id)),
         ]
