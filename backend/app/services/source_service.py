@@ -1,5 +1,4 @@
 import math
-import re
 
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import FieldCondition, Filter, MatchValue
@@ -9,92 +8,15 @@ from app.core.exceptions import ChunkNotFoundError
 from app.llm.base import LLMProvider
 from app.schemas.source import HighlightRange, SourceChunkResponse
 
-# Split on punctuation + whitespace + uppercase (real sentence boundary).
-# Avoids splitting "3. Application" or "DA99 (pressing)." mid-item.
-_SENTENCE_SPLIT = re.compile(r"(?<=[.?!])\s+(?=[A-Z])")
+# Minimum cosine similarity to consider a window worth highlighting.
+# Windows below this score are not shown — the chunk may simply be
+# weakly related to this specific query phrase.
+_SEMANTIC_THRESHOLD = 0.55
 
-# Minimum cosine similarity for a sentence to be highlighted semantically
-_SEMANTIC_THRESHOLD = 0.75
-
-# Common English stop words to exclude from keyword fallback
-_STOP_WORDS = {
-    "a",
-    "an",
-    "the",
-    "is",
-    "are",
-    "was",
-    "were",
-    "be",
-    "been",
-    "being",
-    "have",
-    "has",
-    "had",
-    "do",
-    "does",
-    "did",
-    "will",
-    "would",
-    "could",
-    "should",
-    "may",
-    "might",
-    "shall",
-    "can",
-    "to",
-    "of",
-    "in",
-    "for",
-    "on",
-    "with",
-    "at",
-    "by",
-    "from",
-    "as",
-    "it",
-    "its",
-    "this",
-    "that",
-    "these",
-    "those",
-    "and",
-    "or",
-    "but",
-    "if",
-    "then",
-    "there",
-    "what",
-    "which",
-    "who",
-    "how",
-    "when",
-    "where",
-    "why",
-    "not",
-    "no",
-    "so",
-    "up",
-    "out",
-    "about",
-    "into",
-    "than",
-    "i",
-    "you",
-    "he",
-    "she",
-    "we",
-    "they",
-    "me",
-    "him",
-    "her",
-    "us",
-    "them",
-    "my",
-    "your",
-    "his",
-    "their",
-}
+# Sliding window size in words. Chosen to be long enough to carry
+# semantic meaning but short enough to pinpoint the relevant phrase.
+_WINDOW_WORDS = 20
+_WINDOW_STEP = 10  # step between windows (50% overlap)
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
@@ -104,6 +26,50 @@ def _cosine(a: list[float], b: list[float]) -> float:
     if mag_a == 0 or mag_b == 0:
         return 0.0
     return dot / (mag_a * mag_b)
+
+
+def _word_windows(text: str) -> list[tuple[str, int, int]]:
+    """
+    Slide a fixed-size word window over `text`.
+    Returns (window_text, char_start, char_end) tuples.
+    Language-agnostic: splits only on whitespace.
+    """
+    # Build (word, char_start) pairs
+    words: list[tuple[str, int]] = []
+    i = 0
+    while i < len(text):
+        # Skip whitespace
+        while i < len(text) and text[i].isspace():
+            i += 1
+        if i >= len(text):
+            break
+        # Collect word
+        j = i
+        while j < len(text) and not text[j].isspace():
+            j += 1
+        words.append((text[i:j], i))
+        i = j
+
+    if not words:
+        return []
+
+    windows: list[tuple[str, int, int]] = []
+    n = len(words)
+    step = max(1, _WINDOW_STEP)
+    size = min(_WINDOW_WORDS, n)
+
+    for start_idx in range(0, n, step):
+        end_idx = min(start_idx + size, n)
+        window_words = words[start_idx:end_idx]
+        char_start = window_words[0][1]
+        last_word, last_start = window_words[-1]
+        char_end = last_start + len(last_word)
+        window_text = text[char_start:char_end]
+        windows.append((window_text, char_start, char_end))
+        if end_idx == n:
+            break
+
+    return windows
 
 
 class SourceService:
@@ -145,74 +111,35 @@ class SourceService:
             highlight_ranges=highlight_ranges,
         )
 
-    def _split_sentences(self, text: str) -> list[tuple[str, int, int]]:
-        """Split text into (sentence, start, end) tuples, preserving char positions."""
-        parts: list[tuple[str, int, int]] = []
-        pos = 0
-        for seg in _SENTENCE_SPLIT.split(text):
-            seg_stripped = seg.strip()
-            # Skip trivially short fragments (numbers, punctuation, etc.)
-            if len(seg_stripped) < 10:
-                pos += len(seg)
-                # Account for the whitespace consumed by the split
-                while pos < len(text) and text[pos] in " \t\n":
-                    pos += 1
-                continue
-            start = text.find(seg_stripped, pos)
-            if start == -1:
-                start = pos
-            end = start + len(seg_stripped)
-            parts.append((seg_stripped, start, end))
-            pos = end
-        return parts
-
     async def _compute_highlights(self, text: str, query: str) -> list[HighlightRange]:
-        if not query:
+        if not query or not text:
             return []
 
-        sentences = self._split_sentences(text)
-        if not sentences:
+        windows = _word_windows(text)
+        if not windows:
             return []
 
-        # --- Strategy 1: semantic similarity via embeddings ---
         try:
             query_vec = await self._llm.embed(query)
             scored: list[tuple[float, int, int]] = []
-            for sent_text, start, end in sentences:
-                sent_vec = await self._llm.embed(sent_text)
-                similarity = _cosine(query_vec, sent_vec)
+            for win_text, start, end in windows:
+                win_vec = await self._llm.embed(win_text)
+                similarity = _cosine(query_vec, win_vec)
                 scored.append((similarity, start, end))
 
-            if scored:
-                scored.sort(key=lambda x: -x[0])
-                best_score = scored[0][0]
-                # Include all sentences within 0.05 of the best score (up to 3)
-                top = [s for s in scored if best_score - s[0] <= 0.05][:3]
-                return [HighlightRange(start=s[1], end=s[2]) for s in top]
+            if not scored:
+                return []
+
+            scored.sort(key=lambda x: -x[0])
+            best_score = scored[0][0]
+
+            # Only highlight if the best window clears the threshold
+            if best_score < _SEMANTIC_THRESHOLD:
+                return []
+
+            # Return windows within 0.03 of the best (covers adjacent overlap windows)
+            top = [s for s in scored if best_score - s[0] <= 0.03][:3]
+            return [HighlightRange(start=s[1], end=s[2]) for s in top]
 
         except Exception:
-            pass  # Fall through to lexical fallback
-
-        # --- Strategy 2: lexical fallback (keyword overlap) ---
-        raw_words = re.findall(r"[a-zA-Z0-9]+", query.lower())
-        keywords = [w for w in raw_words if w not in _STOP_WORDS and len(w) >= 3]
-        if not keywords:
             return []
-
-        lex_scored: list[tuple[int, int, int]] = []
-        for sent_text, start, end in sentences:
-            sentence_lower = sent_text.lower()
-            hits = sum(1 for kw in keywords if kw in sentence_lower)
-            if hits > 0:
-                lex_scored.append((hits, start, end))
-
-        if lex_scored:
-            lex_scored.sort(key=lambda x: -x[0])
-            best_score_lex = lex_scored[0][0]
-            return [
-                HighlightRange(start=s[1], end=s[2])
-                for s in lex_scored
-                if s[0] == best_score_lex
-            ][:3]
-
-        return []
