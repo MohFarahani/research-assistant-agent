@@ -3,6 +3,7 @@
 # (Groq does not offer a public embedding API).
 from google import genai
 from groq import AsyncGroq
+from groq.types.chat import ChatCompletionMessageParam
 
 from app.core.exceptions import LLMError
 from app.llm.base import LLMProvider
@@ -22,7 +23,7 @@ class GroqProvider(LLMProvider):
         self._embedding_model = embedding_model
 
     async def complete(self, prompt: str, system: str | None = None) -> str:
-        messages: list[dict[str, str]] = []
+        messages: list[ChatCompletionMessageParam] = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})

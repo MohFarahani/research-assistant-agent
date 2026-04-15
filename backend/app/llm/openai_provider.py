@@ -1,5 +1,6 @@
 # OpenAI implementation of LLMProvider.
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 from app.core.exceptions import LLMError
 from app.llm.base import LLMProvider
@@ -12,7 +13,7 @@ class OpenAIProvider(LLMProvider):
         self._embedding_model = embedding_model
 
     async def complete(self, prompt: str, system: str | None = None) -> str:
-        messages: list[dict[str, str]] = []
+        messages: list[ChatCompletionMessageParam] = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})

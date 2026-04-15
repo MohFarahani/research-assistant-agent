@@ -21,12 +21,19 @@ class AnthropicProvider(LLMProvider):
 
     async def complete(self, prompt: str, system: str | None = None) -> str:
         try:
-            response = await self._client.messages.create(
-                model=self._model,
-                max_tokens=2048,
-                messages=[{"role": "user", "content": prompt}],
-                system=system if system is not None else anthropic.NOT_GIVEN,
-            )
+            if system is not None:
+                response = await self._client.messages.create(
+                    model=self._model,
+                    max_tokens=2048,
+                    messages=[{"role": "user", "content": prompt}],
+                    system=system,
+                )
+            else:
+                response = await self._client.messages.create(
+                    model=self._model,
+                    max_tokens=2048,
+                    messages=[{"role": "user", "content": prompt}],
+                )
             block = response.content[0]
             return block.text if hasattr(block, "text") else ""
         except Exception as exc:

@@ -65,7 +65,10 @@ class DocumentService:
         names = [c.name for c in collections.collections]
         if settings.qdrant_collection in names:
             info = await self._qdrant.get_collection(settings.qdrant_collection)
-            existing_dim = info.config.params.vectors.size
+            vectors = info.config.params.vectors
+            existing_dim: int | None = (
+                vectors.size if isinstance(vectors, VectorParams) else None
+            )
             if existing_dim != settings.embedding_dimensions:
                 await self._qdrant.delete_collection(settings.qdrant_collection)
             else:
