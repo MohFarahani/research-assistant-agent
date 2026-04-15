@@ -5,7 +5,7 @@ from typing import Any
 
 import fitz  # PyMuPDF
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import Distance, FieldCondition, Filter, MatchValue, PointStruct, VectorParams
+from qdrant_client.models import Distance, PointStruct, VectorParams
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings

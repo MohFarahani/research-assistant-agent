@@ -100,4 +100,6 @@ class TestSummarizeEndpoint:
             async with _build_client(mock_qdrant, mock_llm) as client:
                 await client.post("/summarize", json={"doc_id": "my-doc-id"})
 
-        mock_service.summarize.assert_awaited_once_with("my-doc-id", user_id=_TEST_USER_ID)
+        mock_service.summarize.assert_awaited_once_with(
+            "my-doc-id", user_id=_TEST_USER_ID
+        )

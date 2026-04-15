@@ -9,6 +9,7 @@ Create Date: 2026-04-15
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "0002"
@@ -23,9 +24,7 @@ def upgrade() -> None:
         sa.Column("user_id", sa.String(36), nullable=True),
     )
     # Backfill existing rows with a sentinel UUID — they belong to nobody
-    op.execute(
-        "UPDATE documents SET user_id = '00000000-0000-0000-0000-000000000000'"
-    )
+    op.execute("UPDATE documents SET user_id = '00000000-0000-0000-0000-000000000000'")
     op.alter_column("documents", "user_id", nullable=False)
     op.create_index("ix_documents_user_id", "documents", ["user_id"])
 
