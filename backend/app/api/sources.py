@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.core.dependencies import QdrantDep
+from app.core.dependencies import LLMDep, QdrantDep
 from app.core.exceptions import ChunkNotFoundError
 from app.schemas.source import SourceChunkResponse
 from app.services.source_service import SourceService
@@ -13,9 +13,10 @@ async def get_source_chunk(
     doc_id: str,
     chunk_id: str,
     qdrant: QdrantDep,
+    llm: LLMDep,
     query: str = Query(default=""),
 ) -> SourceChunkResponse:
-    service = SourceService(qdrant)
+    service = SourceService(qdrant, llm)
     try:
         return await service.get_chunk(doc_id=doc_id, chunk_id=chunk_id, query=query)
     except ChunkNotFoundError as exc:
