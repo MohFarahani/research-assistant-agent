@@ -5,7 +5,7 @@ from typing import Any
 
 import fitz  # PyMuPDF
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
+from qdrant_client.models import Distance, PayloadSchemaType, PointStruct, VectorParams
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -89,7 +89,7 @@ class DocumentService:
             await self._qdrant.create_payload_index(
                 collection_name=settings.qdrant_collection,
                 field_name="user_id",
-                field_schema="keyword",
+                field_schema=PayloadSchemaType.KEYWORD,
             )
         except Exception:
             pass  # index may already exist — non-fatal

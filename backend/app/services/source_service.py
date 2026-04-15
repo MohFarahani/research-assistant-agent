@@ -1,6 +1,8 @@
 import math
 
 from qdrant_client import AsyncQdrantClient
+from collections.abc import Sequence
+
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from app.config import settings
@@ -80,14 +82,13 @@ class SourceService:
     async def get_chunk(
         self, doc_id: str, chunk_id: str, query: str = "", user_id: str = ""
     ) -> SourceChunkResponse:
-        must_conditions = [
+        must: list[FieldCondition] = [
             FieldCondition(key="chunk_id", match=MatchValue(value=chunk_id)),
             FieldCondition(key="doc_id", match=MatchValue(value=doc_id)),
         ]
         if user_id:
-            must_conditions.append(
-                FieldCondition(key="user_id", match=MatchValue(value=user_id))
-            )
+            must.append(FieldCondition(key="user_id", match=MatchValue(value=user_id)))
+        must_conditions: Sequence[FieldCondition] = must
         results, _ = await self._qdrant.scroll(
             collection_name=settings.qdrant_collection,
             scroll_filter=Filter(must=must_conditions),

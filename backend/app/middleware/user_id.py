@@ -16,7 +16,7 @@ _ONE_YEAR = 60 * 60 * 24 * 365
 _CallNext = Callable[[Request], Awaitable[Response]]
 
 
-class UserIdMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
+class UserIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: _CallNext) -> Response:
         raw = request.cookies.get(_COOKIE_NAME, "")
         is_new = not raw or not _UUID_RE.match(raw)

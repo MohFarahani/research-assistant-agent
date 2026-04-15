@@ -42,7 +42,7 @@ strict = true
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["app.api.*", "app.main"]
+module = ["app.api.*", "app.main", "app.middleware.*"]
 disable_error_code = ["misc"]
 
 [tool.pytest.ini_options]
