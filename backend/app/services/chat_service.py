@@ -28,13 +28,14 @@ QUESTION: {question}
 
 CRITICAL INSTRUCTIONS:
 1. Answer using ONLY the sources above — no outside knowledge.
-2. After EVERY sentence or claim, insert the citation token [CITE:chunk_id] \
-using the exact chunk_id UUID shown in the source header (e.g. [CITE:3fa85f64-5717-4562-b3fc-2c963f66afa6]).
+2. After EVERY sentence or claim, insert [CITE:chunk_id] using the
+   exact chunk_id UUID from the source header.
 3. You MUST include at least one [CITE:...] token in your answer.
 4. Keep the answer concise and factual.
 
 EXAMPLE FORMAT:
-The process starts with targeting [CITE:abc-123]. Then qualification occurs [CITE:abc-123].
+Targeting is the first step [CITE:abc-123]. Then qualification
+occurs [CITE:abc-123].
 
 Now answer:"""
 
