@@ -2,7 +2,7 @@ import shutil
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 
 from app.core.dependencies import (
     DBSession,
@@ -10,7 +10,6 @@ from app.core.dependencies import (
     QdrantDep,
     RateLimitCheck,
     UserIdDep,
-    get_client_ip,
 )
 from app.schemas.document import DocumentResponse, UploadResponse
 from app.services.document_service import DocumentService
@@ -50,13 +49,12 @@ async def list_documents(
 
 @router.post("/upload", response_model=UploadResponse, status_code=202)
 async def upload_document(
-    request: Request,
     background_tasks: BackgroundTasks,
     db: DBSession,
     qdrant: QdrantDep,
     llm: LLMDep,
     user_id: UserIdDep,
-    _rate_check: RateLimitCheck,
+    rate_keys: RateLimitCheck,
     file: UploadFile = File(...),
 ) -> UploadResponse:
     filename = file.filename or "upload.pdf"
@@ -71,10 +69,10 @@ async def upload_document(
     with file_path.open("wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    # Capture user_id + client_ip here (request.state unavailable in bg tasks)
-    client_ip = get_client_ip(request)
+    # rate_keys = (user_id, client_ip) — pass explicitly since request.state
+    # is not accessible inside background tasks
     background_tasks.add_task(
-        _run_ingestion, doc_id, filename, file_path, user_id, client_ip
+        _run_ingestion, doc_id, filename, file_path, rate_keys[0], rate_keys[1]
     )
 
     return UploadResponse(id=doc_id, filename=filename, status="processing")

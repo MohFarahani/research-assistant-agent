@@ -39,7 +39,7 @@ def _build_client(
     app.dependency_overrides[get_qdrant] = lambda: mock_qdrant
     app.dependency_overrides[get_llm] = lambda: mock_llm
     app.dependency_overrides[get_user_id] = lambda: _TEST_USER_ID
-    app.dependency_overrides[check_rate_limit] = lambda: None
+    app.dependency_overrides[check_rate_limit] = lambda: (_TEST_USER_ID, "127.0.0.1")
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
