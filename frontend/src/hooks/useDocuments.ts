@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listDocuments, uploadDocument } from "@/services/documentService";
+import { listDocuments, uploadDocument, getUsage } from "@/services/documentService";
 import type { Document, UploadResponse } from "@/types/document";
+import type { UsageStatus } from "@/types/usage";
 
 export function useDocuments() {
   return useQuery<Document[]>({
@@ -11,6 +12,15 @@ export function useDocuments() {
       const data = query.state.data;
       return Array.isArray(data) && data.some((d) => d.status === "processing") ? 5_000 : false;
     },
+  });
+}
+
+export function useUsage() {
+  return useQuery<UsageStatus>({
+    queryKey: ["usage"],
+    queryFn: getUsage,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 }
 

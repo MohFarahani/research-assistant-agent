@@ -4,7 +4,13 @@ from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 
-from app.core.dependencies import DBSession, LLMDep, QdrantDep, UserIdDep
+from app.core.dependencies import (
+    DBSession,
+    LLMDep,
+    QdrantDep,
+    RateLimitCheck,
+    UserIdDep,
+)
 from app.schemas.document import DocumentResponse, UploadResponse
 from app.services.document_service import DocumentService
 
@@ -14,11 +20,17 @@ _UPLOAD_DIR = Path("uploads")
 
 
 async def _run_ingestion(
-    doc_id: uuid.UUID, filename: str, file_path: Path, user_id: str
+    doc_id: uuid.UUID,
+    filename: str,
+    file_path: Path,
+    user_id: str,
+    client_ip: str,
 ) -> None:
     """Standalone background coroutine with its own DB session."""
     from app.core.dependencies import _async_session, get_llm, get_qdrant
+    from app.llm.usage import current_rate_keys
 
+    current_rate_keys.set((user_id, client_ip))
     async with _async_session() as session:
         service = DocumentService(session, get_qdrant(), get_llm())
         await service.ingest(
@@ -42,6 +54,7 @@ async def upload_document(
     qdrant: QdrantDep,
     llm: LLMDep,
     user_id: UserIdDep,
+    rate_keys: RateLimitCheck,
     file: UploadFile = File(...),
 ) -> UploadResponse:
     filename = file.filename or "upload.pdf"
@@ -56,7 +69,10 @@ async def upload_document(
     with file_path.open("wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    # user_id captured here — request.state is not accessible in background tasks
-    background_tasks.add_task(_run_ingestion, doc_id, filename, file_path, user_id)
+    # rate_keys = (user_id, client_ip) — pass explicitly since request.state
+    # is not accessible inside background tasks
+    background_tasks.add_task(
+        _run_ingestion, doc_id, filename, file_path, rate_keys[0], rate_keys[1]
+    )
 
     return UploadResponse(id=doc_id, filename=filename, status="processing")

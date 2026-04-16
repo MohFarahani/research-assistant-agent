@@ -7,7 +7,7 @@ from httpx import ASGITransport, AsyncClient
 from qdrant_client import AsyncQdrantClient
 
 from app.api import summarize
-from app.core.dependencies import get_llm, get_qdrant, get_user_id
+from app.core.dependencies import check_rate_limit, get_llm, get_qdrant, get_user_id
 from app.llm.base import LLMProvider
 
 _TEST_USER_ID = "aaaaaaaa-0000-0000-0000-000000000001"
@@ -39,6 +39,7 @@ def _build_client(
     app.dependency_overrides[get_qdrant] = lambda: mock_qdrant
     app.dependency_overrides[get_llm] = lambda: mock_llm
     app.dependency_overrides[get_user_id] = lambda: _TEST_USER_ID
+    app.dependency_overrides[check_rate_limit] = lambda: (_TEST_USER_ID, "127.0.0.1")
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 

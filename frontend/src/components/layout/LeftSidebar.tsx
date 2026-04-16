@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useDocuments, useUploadDocument } from "@/hooks/useDocuments";
+import { useDocuments, useUploadDocument, useUsage } from "@/hooks/useDocuments";
 import { UploadButton } from "@/components/documents/UploadButton";
 import { DocumentList } from "@/components/documents/DocumentList";
+import { UsageBar } from "@/components/documents/UsageBar";
 
 interface LeftSidebarProps {
   className?: string;
@@ -13,7 +14,15 @@ interface LeftSidebarProps {
 export function LeftSidebar({ className = "", expanded = false }: LeftSidebarProps) {
   const { data: documents = [], isLoading, isError } = useDocuments();
   const { mutate: upload, isPending } = useUploadDocument();
+  const { data: usage } = useUsage();
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
+
+  const isRateLimited = usage
+    ? usage.tokens_used >= usage.tokens_limit || usage.requests_used >= usage.requests_limit
+    : false;
+  const resetTime = usage
+    ? new Date(usage.reset_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : undefined;
 
   return (
     <aside
@@ -25,11 +34,11 @@ export function LeftSidebar({ className = "", expanded = false }: LeftSidebarPro
         </h2>
         {/* Full button when expanded (mobile drawer) or on lg+ */}
         {expanded ? (
-          <UploadButton onUpload={upload} isPending={isPending} />
+          <UploadButton onUpload={upload} isPending={isPending} isRateLimited={isRateLimited} resetTime={resetTime} />
         ) : (
           <>
             <div className="hidden lg:block">
-              <UploadButton onUpload={upload} isPending={isPending} />
+              <UploadButton onUpload={upload} isPending={isPending} isRateLimited={isRateLimited} resetTime={resetTime} />
             </div>
             <div className="lg:hidden flex justify-center">
               <button
@@ -37,9 +46,10 @@ export function LeftSidebar({ className = "", expanded = false }: LeftSidebarPro
                   const input = document.getElementById("file-upload-compact") as HTMLInputElement;
                   input?.click();
                 }}
-                disabled={isPending}
-                aria-label="Upload document"
-                className="w-10 h-10 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-60"
+                disabled={isPending || isRateLimited}
+                aria-label={isRateLimited ? `Upload disabled — daily limit reached, resets at ${resetTime}` : "Upload document"}
+                title={isRateLimited ? `Daily limit reached. Resets at ${resetTime}` : undefined}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <input
                   id="file-upload-compact"
@@ -71,7 +81,7 @@ export function LeftSidebar({ className = "", expanded = false }: LeftSidebarPro
           </>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-2 flex flex-col">
         {/* Full list when expanded (mobile drawer) or on lg+ */}
         {expanded ? (
           <DocumentList
@@ -118,6 +128,23 @@ export function LeftSidebar({ className = "", expanded = false }: LeftSidebarPro
                 activeDocumentId={activeDocumentId}
                 onSelectDocument={setActiveDocumentId}
               />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Usage bar — pinned to bottom of sidebar */}
+      <div className="flex-shrink-0 border-t border-zinc-700/50 p-3 lg:p-4">
+        {/* Compact dot on tablet (icon-only), full bar on desktop/expanded */}
+        {expanded ? (
+          <UsageBar />
+        ) : (
+          <>
+            <div className="lg:hidden">
+              <UsageBar compact />
+            </div>
+            <div className="hidden lg:block">
+              <UsageBar />
             </div>
           </>
         )}
