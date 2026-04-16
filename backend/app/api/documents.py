@@ -10,6 +10,7 @@ from app.core.dependencies import (
     QdrantDep,
     RateLimitCheck,
     UserIdDep,
+    get_client_ip,
 )
 from app.schemas.document import DocumentResponse, UploadResponse
 from app.services.document_service import DocumentService
@@ -71,7 +72,7 @@ async def upload_document(
         shutil.copyfileobj(file.file, f)
 
     # Capture user_id + client_ip here (request.state unavailable in bg tasks)
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request)
     background_tasks.add_task(
         _run_ingestion, doc_id, filename, file_path, user_id, client_ip
     )

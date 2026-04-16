@@ -34,9 +34,21 @@ def get_user_id(request: Request) -> str:
     return request.state.user_id  # type: ignore[no-any-return]
 
 
+def get_client_ip(request: Request) -> str:
+    """Return the real client IP, looking through reverse-proxy headers first."""
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        # Header may be a comma-separated list: "client, proxy1, proxy2"
+        return str(forwarded_for.split(",")[0].strip())
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return str(real_ip.strip())
+    return str(request.client.host) if request.client else "unknown"
+
+
 async def check_rate_limit(request: Request) -> None:
     user_id: str = request.state.user_id
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request)
     current_rate_keys.set((user_id, client_ip))
     await get_rate_limiter().check(user_id, client_ip)
 
