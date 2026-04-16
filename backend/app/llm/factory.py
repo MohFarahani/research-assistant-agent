@@ -9,12 +9,14 @@ def get_llm_provider() -> LLMProvider:
     from app.config import settings
 
     if settings.llm_provider == "gemini":
+        from app.core.rate_limiter import get_rate_limiter
         from app.llm.gemini_provider import GeminiProvider
 
         return GeminiProvider(
             api_key=settings.gemini_api_key,
             model=settings.gemini_model,
             embedding_model=settings.gemini_embedding_model,
+            rate_limiter=get_rate_limiter(),
         )
 
     if settings.llm_provider == "groq":

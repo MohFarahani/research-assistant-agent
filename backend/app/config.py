@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     qdrant_port: int = 6333
     qdrant_collection: str = "documents"
 
+    # Rate limiting (daily per-user budgets)
+    rate_limit_daily_tokens: int = 500_000
+    rate_limit_daily_requests: int = 150
+
     # Server
     backend_port: int = 8000
     cors_origins: str = "http://localhost:3000"

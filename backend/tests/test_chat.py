@@ -9,7 +9,13 @@ from qdrant_client import AsyncQdrantClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import chat
-from app.core.dependencies import get_db, get_llm, get_qdrant, get_user_id
+from app.core.dependencies import (
+    check_rate_limit,
+    get_db,
+    get_llm,
+    get_qdrant,
+    get_user_id,
+)
 from app.llm.base import LLMProvider
 from app.schemas.chat import ChatResponse, CitationRef
 
@@ -53,6 +59,7 @@ def _build_client(
     app.dependency_overrides[get_qdrant] = lambda: mock_qdrant
     app.dependency_overrides[get_llm] = lambda: mock_llm
     app.dependency_overrides[get_user_id] = lambda: _TEST_USER_ID
+    app.dependency_overrides[check_rate_limit] = lambda: None
 
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
