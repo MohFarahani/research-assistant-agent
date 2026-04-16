@@ -58,13 +58,22 @@ docker/     # Dockerfiles for backend and frontend
 | `qdrant`   | qdrant/qdrant          | 6333 | Vector store for RAG retrieval |
 
 ## LLM Provider (Strategy Pattern)
-Controlled by `LLM_PROVIDER` env var (`"anthropic"` or `"openai"`).
-All LLM calls must go through `backend/app/llm/factory.py` — never import `anthropic`/`openai` SDKs directly in services.
+Controlled by `LLM_PROVIDER` env var. Supported values:
+- `gemini` (free tier) — default
+- `groq` (free tier; uses Gemini for embeddings)
+- `anthropic` (paid; uses OpenAI for embeddings)
+- `openai` (paid)
+- `fallback` — try providers in `LLM_FALLBACK_CHAIN` order. On an upstream
+  quota / 429 the exhausted provider is skipped for the rest of the UTC day
+  and the next one is tried transparently.
+
+All LLM calls must go through `backend/app/llm/factory.py` — never import provider SDKs directly in services.
 
 ## Environment Variables
 Copy `.env.example` → `.env`. Key vars:
-- `LLM_PROVIDER` — `anthropic` or `openai`
-- `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`
+- `LLM_PROVIDER` — `gemini`, `groq`, `anthropic`, `openai`, or `fallback`
+- `LLM_FALLBACK_CHAIN` — comma-separated chain (only used when `LLM_PROVIDER=fallback`), e.g. `gemini,groq`
+- `GEMINI_API_KEY` / `GROQ_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`
 - `DATABASE_URL` — PostgreSQL connection string
 - `QDRANT_HOST` / `QDRANT_PORT`
 

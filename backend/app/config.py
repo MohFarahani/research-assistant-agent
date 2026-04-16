@@ -6,7 +6,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # LLM
+    # One of: "gemini", "groq", "anthropic", "openai", "fallback"
+    # "fallback" uses llm_fallback_chain to route around upstream-quota errors.
     llm_provider: str = "gemini"
+    llm_fallback_chain: str = "gemini,groq"
 
     # Google AI Studio / Gemini (free tier)
     gemini_api_key: str = ""

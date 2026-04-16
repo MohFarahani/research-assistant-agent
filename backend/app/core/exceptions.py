@@ -32,5 +32,11 @@ class LLMError(Exception):
         self.message = message
 
 
+class QuotaExceededError(LLMError):
+    """Raised when an upstream LLM provider returns a quota / rate-limit error
+    (e.g. Gemini free-tier RESOURCE_EXHAUSTED, Groq 429). Signals the fallback
+    layer to advance to the next provider in the chain."""
+
+
 def llm_error_to_http(exc: LLMError) -> HTTPException:
     return HTTPException(status_code=502, detail=f"LLM error: {exc.message}")
