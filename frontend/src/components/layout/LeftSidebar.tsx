@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useDocuments, useUploadDocument } from "@/hooks/useDocuments";
 import { UploadButton } from "@/components/documents/UploadButton";
 import { DocumentList } from "@/components/documents/DocumentList";
+import { UsageBar } from "@/components/documents/UsageBar";
 
 interface LeftSidebarProps {
   className?: string;
@@ -71,7 +72,7 @@ export function LeftSidebar({ className = "", expanded = false }: LeftSidebarPro
           </>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-2 flex flex-col">
         {/* Full list when expanded (mobile drawer) or on lg+ */}
         {expanded ? (
           <DocumentList
@@ -118,6 +119,23 @@ export function LeftSidebar({ className = "", expanded = false }: LeftSidebarPro
                 activeDocumentId={activeDocumentId}
                 onSelectDocument={setActiveDocumentId}
               />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Usage bar — pinned to bottom of sidebar */}
+      <div className="flex-shrink-0 border-t border-zinc-700/50 p-3 lg:p-4">
+        {/* Compact dot on tablet (icon-only), full bar on desktop/expanded */}
+        {expanded ? (
+          <UsageBar />
+        ) : (
+          <>
+            <div className="lg:hidden">
+              <UsageBar compact />
+            </div>
+            <div className="hidden lg:block">
+              <UsageBar />
             </div>
           </>
         )}
