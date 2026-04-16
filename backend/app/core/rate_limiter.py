@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from app.llm.usage import LLMUsage
 
@@ -47,6 +47,11 @@ class RateLimiter:
         self._user_buckets: dict[str, _Bucket] = {}
         self._ip_buckets: dict[str, _Bucket] = {}
         self._lock = asyncio.Lock()
+        # Global (app-wide) flag set: providers whose upstream quota is
+        # exhausted for the current UTC day. Shared across all users because
+        # the quota is on our single API key per provider.
+        self._exhausted_providers: set[str] = set()
+        self._exhausted_day: date = datetime.now(UTC).date()
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -102,6 +107,23 @@ class RateLimiter:
                 bucket = self._get_bucket(store, key)
                 bucket.tokens_used += usage.total_tokens
                 bucket.requests_used += 1
+
+    def _roll_provider_day_if_needed(self) -> None:
+        today = datetime.now(UTC).date()
+        if today != self._exhausted_day:
+            self._exhausted_providers.clear()
+            self._exhausted_day = today
+
+    async def mark_provider_exhausted(self, provider: str) -> None:
+        """Mark an upstream provider as exhausted for the current UTC day."""
+        async with self._lock:
+            self._roll_provider_day_if_needed()
+            self._exhausted_providers.add(provider)
+
+    async def is_provider_exhausted(self, provider: str) -> bool:
+        async with self._lock:
+            self._roll_provider_day_if_needed()
+            return provider in self._exhausted_providers
 
     async def get_status(self, user_id: str, client_ip: str) -> dict[str, object]:
         """Return the stricter of the two budgets for display."""
